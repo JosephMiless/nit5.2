@@ -1,6 +1,9 @@
 const express = require("express");
 const { error } = require("node:console");
+const { pid } = require("node:process");
 const app = express();
+
+app.use(express.json())
 
 const users = [
   {
@@ -98,6 +101,7 @@ const products = [
     stock: 80,
     rating: 4.6,
   },
+
 ];
 
 app.get("/", (req, res) => {
@@ -111,7 +115,6 @@ app.get("/users", (req, res) => {
 
   if (id) {
     user = users.find((user) => user.id === parseInt(id));
-
     if (!user) {
       return res.json({ error: `user with id: ${id} not found` });
     } else if (email) {
@@ -149,7 +152,69 @@ app.get("/products", (req, res) => {
 
     return res.status(200).json({ product });
   }
+
+  return res.status(200).json({products})
 });
+
+app.post("/product", (req, res) => {
+  const { name, price, category, stock, rating } = req.body;
+
+  if (!name || !price || !category || !stock || !rating) {
+    return res.status(400).json({ message: "Please all fields are required" });
+  }
+
+  const newProduct = {
+    id: products.length + 1,
+    name,
+    price,
+    category,
+    stock,
+    rating,
+  };
+
+  products.push(newProduct);
+
+  return res
+    .status(201)
+    .json({ message: "New Product added successfully", products });
+});
+
+
+app.post("/products/bulk", (req, res) => {
+  const newProducts = req.body;
+  console.log(products)
+
+  if (newProducts.length == 0) {
+    return res.status.json({message: "please input a value"})
+  }
+
+  for (const product of newProducts) {
+    products.push({ id: products.length + 1, ...product, rating: 0 })
+  }
+
+  return res.status(201).json({message: "bulk product added successfully", products})
+})
+
+
+app.patch("/product/:id", (req, res) => {
+  const { name, price} = req.body;
+const {id} = req.params
+
+  if (!name || !price) {
+    return res.status(400).json({message: "all field are required"})
+  }
+
+  const foundProduct = products.find((p) => p.id == id)
+
+  foundProduct.name = name 
+  foundProduct.price = price
+
+  // const updatedProducts = { ...foundProduct, name, price }
+
+
+  return res.status(201).json({message: `product with id - ${id} has been updated`, products})
+})
+
 
 app.listen(4000, () => {
   console.log("sever is running");
