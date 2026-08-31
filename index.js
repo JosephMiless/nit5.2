@@ -1,7 +1,8 @@
 const express = require("express");
 const app = express();
 const { Sequelize, DataTypes } = require("sequelize");
-const sequelize =  require('./config/sequelize')
+const sequelize =  require('./config/sequelize');
+const User = require("./models/user");
 
 app.use(express.json());
 
@@ -145,27 +146,54 @@ app.get("/", (req, res) => {
   return res.json({ message: "Hello World" });
 });
 
-app.get("/users", (req, res) => {
+app.get("/users", async(req, res) => {
   const id = req.query.id;
   const email = req.query.email;
   let user;
 
   if (id) {
-    user = users.find((user) => user.id === parseInt(id));
+    // user = users.find((user) => user.id === parseInt(id));
+    user = await User.findOne({
+      where: { id },
+    });
     if (!user) {
       return res.json({ error: `user with id: ${id} not found` });
-    } else if (email) {
-      user = users.find((user) => user.email === email);
-
-      if (!email) {
-        return res.json({ error: `user with id: ${id} not found` });
-      }
-      return res.json({ messages: "user fetched  successfully", user });
     }
-
     return res.json({ messages: "user fetched  successfully", user });
+  } else if (email) {
+    // user = users.find((user) => user.email === email);
+    user = await User.findOne({ where: {email} });
+    if (!user) {
+      return res.json({ error: `user with email: ${email} not found` });
+    }
+    return res.json({ messages: "user fetched  successfullyyyyy", user });
   }
-  return res.json({ message: "users fetched successfully", users });
+  const allUsers = await User.findAll();
+  return res.json({ message: "users fetched successfully", allUsers });
+});
+
+app.post("/user", async (req, res) => {
+  const { firstName, lastName, email } = req.body;
+
+  if (!firstName || !lastName || !email) {
+    return res.status(400).json({ message: "Please all fields are required" });
+  }
+
+  const userExixts = await User.findOne({where: {email}});
+
+  if(userExixts) return res.status(400).json({error: "User exists"});
+
+  const newUser = {
+    firstName,
+    lastName,
+    email
+  };
+
+  const user = await User.create(newUser);
+
+  return res
+    .status(201)
+    .json({ message: "Account created successfully", user });
 });
 
 app.get("/products", async (req, res) => {

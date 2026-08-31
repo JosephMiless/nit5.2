@@ -1,11 +1,11 @@
 module.exports = {
   development: {
-    username: "postgres",
-    password: "1234567890",
+    username: "Miles",
+    password: "magic7300",
     database: "nit5.2-db",
     host: "127.0.0.1",
     dialect: "postgres",
-    "port": 5433
+    "port": 5432
   },
   test: {
     username: "root",
