@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "dev": "nodemon index.js",
+    "dev": "nodemon src/index.js",
     "up": "npx sequelize-cli db:migrate",
     "down": "npx sequelize-cli db:migrate:undo",
     "make:migrate": "npx  sequelize migration:generate --migrations-path ./migrations --name"
@@ -17,7 +17,9 @@
   "type": "commonjs",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "joi": "^18.2.8",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.22.0",
     "pg-hstore": "^2.3.4",
