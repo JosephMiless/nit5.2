@@ -1,11 +1,12 @@
 const express = require("express");
 const app = express();
 const { Sequelize, DataTypes } = require("sequelize");
-const sequelize =  require('./config/sequelize');
+const sequelize = require("./config/sequelize");
 const User = require("./models/user");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 app.use(express.json());
-
 
 const Product = sequelize.define("Products", {
   id: {
@@ -140,13 +141,26 @@ const logger = (req, res, next) => {
   next();
 };
 
+
+const authorize = (req, res, next) => {
+  const token = req.headers.authorization.split(" ")[1];
+    
+  
+      if(!token){
+        return res.status(401).json({error: "Unauthorized"});
+      }
+      const decoded = jwt.verify(token, "jwt-secret");
+      req.user = decoded;
+      next();
+}
+
 app.use(logger);
 
 app.get("/", (req, res) => {
   return res.json({ message: "Hello World" });
 });
 
-app.get("/users", async(req, res) => {
+app.get("/users", async (req, res) => {
   const id = req.query.id;
   const email = req.query.email;
   let user;
@@ -162,7 +176,7 @@ app.get("/users", async(req, res) => {
     return res.json({ messages: "user fetched  successfully", user });
   } else if (email) {
     // user = users.find((user) => user.email === email);
-    user = await User.findOne({ where: {email} });
+    user = await User.findOne({ where: { email } });
     if (!user) {
       return res.json({ error: `user with email: ${email} not found` });
     }
@@ -172,31 +186,74 @@ app.get("/users", async(req, res) => {
   return res.json({ message: "users fetched successfully", allUsers });
 });
 
-app.post("/user", async (req, res) => {
-  const { firstName, lastName, email } = req.body;
+app.post("/register", async (req, res) => {
+  const { firstName, lastName, email, password } = req.body;
 
-  if (!firstName || !lastName || !email) {
+  if (!firstName || !lastName || !email || !password) {
     return res.status(400).json({ message: "Please all fields are required" });
   }
 
-  const userExixts = await User.findOne({where: {email}});
+  const userExixts = await User.findOne({ where: { email } });
 
-  if(userExixts) return res.status(400).json({error: "User exists"});
+  if (userExixts) return res.status(400).json({ error: "User exists" });
+
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   const newUser = {
     firstName,
     lastName,
-    email
+    email,
+    password: hashedPassword,
   };
 
   const user = await User.create(newUser);
 
+  const { password: pass, ...safeUser } = user;
+
   return res
     .status(201)
-    .json({ message: "Account created successfully", user });
+    .json({ message: "Account created successfully", safeUser });
 });
 
-app.get("/products", async (req, res) => {
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Please all fields are required" });
+  }
+
+  const userExixts = await User.findOne({ where: { email } });
+
+  if (!userExixts)
+    return res.status(400).json({ error: "User does not exists" });
+
+  const checkPassword = await bcrypt.compare(password, userExixts.password);
+
+  if (!checkPassword) {
+    return res.status(403).json({ message: "Incorrect credentials" });
+  }
+
+  const token = jwt.sign(
+    { id: userExixts.id, email: userExixts.email },
+    "jwt-secret",
+    {
+      expiresIn: '1h'
+    }
+  );
+
+
+  const { password: pass, ...safeUser } = userExixts.dataValues;
+
+  return res
+    .status(200)
+    .json({ message: "user logged in successfully", user: safeUser, token });
+});
+
+
+
+
+
+app.get("/products", authorize, async (req, res) => {
   const { price, name } = req.query;
   let product;
 
@@ -280,12 +337,10 @@ app.patch("/product/:id", async (req, res) => {
 
   await foundProduct.update({ stock });
 
-  return res
-    .status(200)
-    .json({
-      message: `product with id - ${id} has been updated`,
-      foundProduct,
-    });
+  return res.status(200).json({
+    message: `product with id - ${id} has been updated`,
+    foundProduct,
+  });
 });
 
 app.put("/product/:id", (req, res) => {
@@ -320,7 +375,7 @@ app.delete("/product/:id", async (req, res) => {
   if (!foundProduct) {
     return res.status(404).json({ error: "product not found" });
   }
-  await foundProduct.destroy({ where: { id: id }  });
+  await foundProduct.destroy({ where: { id: id } });
 
   return res.status(200).json({ message: "product deleted successfully" });
 });
@@ -818,6 +873,6 @@ app.delete("/book/:id", (req, res) => {
 
 app.listen(4000, async () => {
   await sequelize.authenticate();
-  console.log("Database has successfuly established a connection")
+  console.log("Database has successfuly established a connection");
   console.log("sever is running");
 });

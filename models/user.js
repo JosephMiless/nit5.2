@@ -26,6 +26,10 @@ const User = class User extends Model {
         unique: true,
         allowNull: false,
       },
+      password: {
+        type: DataTypes.STRING,
+        allowNull: false
+      }
     },
     {
       sequelize,
