@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js",
-    "dev": "nodemon src/index.js",
+    "start": "npm run up && node src/index.js",
+    "dev": "npm run up && nodemon src/index.js",
     "up": "npx sequelize-cli db:migrate",
     "down": "npx sequelize-cli db:migrate:undo",
     "make:migrate": "npx  sequelize migration:generate --migrations-path ./migrations --name"
