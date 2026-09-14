@@ -1,8 +1,9 @@
 const express = require("express");
 const env = require("./config/env");
-const { logger, authorize } = require("./middleware/auth");
+const { logger } = require("./middleware/auth");
 const userRouter = require("./routes/user.routes");
 const sequelize = require("./config/sequelize");
+const testRouter = require("./routes/test.route");
 // const { Sequelize, DataTypes } = require("sequelize");
 
 
@@ -11,6 +12,7 @@ const sequelize = require("./config/sequelize");
 const app = express();
 app.use(express.json());
 app.use('/users', userRouter);
+app.use("/test", testRouter)
 app.use(logger);
 
 // const Product = sequelize.define("Products", {

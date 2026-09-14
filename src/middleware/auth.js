@@ -1,3 +1,6 @@
+const env = require("../config/env");
+const jwt = require("jsonwebtoken");
+
 const logger = (req, res, next) => {
   console.log(`you hit this route: ${req.url} ${new Date()}`);
 
@@ -5,14 +8,36 @@ const logger = (req, res, next) => {
 };
 
 const authorize = (req, res, next) => {
-  const token = req.headers.authorization.split(" ")[1];
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-  const decoded = jwt.verify(token, "jwt-secret");
-  req.user = decoded;
+  if (!authHeader)
+    return res.status(401).json({
+      error: `Unauthorized!`,
+    });
+
+  const token = authHeader.split(" ")[1];
+
+  jwt.verify(token, env.aSecret, (error, decoded) => {
+    if (error) {
+      return res.status(400).json({
+        error: `Invalid token`,
+      });
+    }
+
+    req.user = decoded;
+  });
+
   next();
 };
 
-module.exports = {logger, authorize}
+const adminAuth = (req, res, next) => {
+  const user = req.user;
+
+  if(req.user !== 'ADMIN'){
+    return res.status(403).json({error: "You do not have access to this endpoint"});
+  };
+
+  next();
+}
+
+module.exports = {logger, authorize, adminAuth};
